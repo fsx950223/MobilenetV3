@@ -9,9 +9,11 @@ tensorflow                      1.13.1
 ``` python
 python train.py
 ```
-### test
+### Test
 ``` python
 python test.py
 ```
-### performance
+### Performance
 MobilenetV3 small:accuracy=0.63
+### Have a try
+https://colab.research.google.com/drive/1ORdxhli85KzA-n5HalzmTmQWC2SFbfJg
