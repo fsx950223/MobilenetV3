@@ -137,10 +137,10 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.
         x = Bneck(96, 576, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
         x = Bneck(96, 576, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
 
-        x = tf.keras.layers.Conv2D(_make_divisible(576 * alpha, 8), 1, use_bias=False)(x)
-        x = tf.keras.layers.BatchNormalization()(x)
-        x = HSwish()(x)
-        output=tf.keras.layers.Add()([x, SeBlock()(x)])
+        x_add = tf.keras.layers.Conv2D(_make_divisible(576 * alpha, 8), 1, use_bias=False)(x)
+        x = tf.keras.layers.BatchNormalization()(x_add)
+        x = tf.keras.layers.Add()([x_add, SeBlock()(x)])
+        output = HSwish()(x)
     if include_top:
         output = tf.keras.layers.AveragePooling2D(pool_size=x.shape[1:3])(output)
         output = tf.keras.layers.Flatten()(output)
