@@ -61,20 +61,14 @@ class SeBlock(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         self.average_pool = tf.keras.layers.AveragePooling2D((int(input_shape[1]),int(input_shape[2])))
-        self.conv1 = tf.keras.layers.Dense(int(input_shape[-1]) // self.reduction, use_bias=False)
-        self.bn1 = tf.keras.layers.BatchNormalization()
-        self.conv2 = tf.keras.layers.Dense(int(input_shape[-1]), use_bias=False)
-        self.bn2 = tf.keras.layers.BatchNormalization()
+        self.dense1 = tf.keras.layers.Dense(int(input_shape[-1]) // self.reduction, use_bias=False,activation=tf.nn.relu)
+        self.dense2 = tf.keras.layers.Dense(int(input_shape[-1]), use_bias=False,activation=tf.keras.activations.hard_sigmoid)
         self.built = True
 
     def call(self, inputs):
         x = self.average_pool(inputs)
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = tf.nn.relu(x)
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = tf.keras.activations.hard_sigmoid(x)
+        x = self.dense1(x)
+        x = self.dense2(x)
         return x
 
 def h_swish(inputs):
