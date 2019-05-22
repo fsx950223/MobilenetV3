@@ -1,6 +1,7 @@
 from mobilenetv3 import MobilenetV3
 import tensorflow as tf
 import tensorflow_datasets as tfds
+tf.enable_eager_execution()
 
 BATCH_SIZE = 32
 USE_TPU=False
@@ -8,10 +9,10 @@ NUM_CLASSES=10
 EPOCH=20
 DATASET='cifar10'
 
-mobilenet_v3 = MobilenetV3((32,32),NUM_CLASSES,'small')
+mobilenet_v3 = MobilenetV3((32,32),NUM_CLASSES,'small',alpha=1.25)
 cos_lr = tf.keras.callbacks.LearningRateScheduler(
     lambda epoch, _: tf.train.cosine_decay(1e-3, epoch,EPOCH)().numpy(), 1)
-logging=tf.keras.callbacks.TensorBoard(log_dir='./', write_images=True)
+logging=tf.keras.callbacks.TensorBoard(log_dir='./logs', write_images=True)
 mobilenet_v3.compile(tf.keras.optimizers.Adam(1e-3), loss=tf.keras.losses.sparse_categorical_crossentropy,
                      metrics=["sparse_categorical_accuracy"])
 if USE_TPU:
