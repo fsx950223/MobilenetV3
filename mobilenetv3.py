@@ -141,7 +141,6 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.
         output = HSwish()(x)
     if include_top:
         output = tf.keras.layers.AveragePooling2D(pool_size=x.shape[1:3])(output)
-        #output = tf.keras.layers.Flatten()(output)
         if alpha > 1.0:
             last_block_filters = _make_divisible(1280 * alpha, 8)
         else:
