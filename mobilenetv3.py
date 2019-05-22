@@ -71,7 +71,7 @@ class SeBlock(tf.keras.layers.Layer):
         x = self.average_pool(inputs)
         x = self.conv1(x)
         x = self.bn1(x)
-        x = tf.nn.relu6(x)
+        x = tf.nn.relu(x)
         x = self.conv2(x)
         x = self.bn2(x)
         x = tf.keras.activations.hard_sigmoid(x)
