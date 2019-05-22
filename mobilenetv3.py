@@ -146,6 +146,7 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.
         else:
             last_block_filters = 1280
         output = tf.keras.layers.Conv2D(last_block_filters,1, use_bias=False,activation=h_swish)(output)
-        output=tf.keras.layers.Dropout(0.5)(output)
+        output = tf.keras.layers.Dropout(0.5)(output)
         output = tf.keras.layers.Conv2D(num_classes,1, use_bias=True,activation=tf.keras.activations.softmax)(output)
+        output = tf.keras.layers.Flatten()(output)
     return tf.keras.Model(input,output)
