@@ -137,11 +137,7 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True):
         output=tf.keras.layers.Add()([x, SeBlock()(x)])
     if include_top:
         output = tf.keras.layers.AveragePooling2D(pool_size=x.shape[1:3])(output)
-        output = tf.keras.layers.Conv2D(1280, 1)(output)
-        output = tf.keras.layers.BatchNormalization()(output)
-        output = HSwish()(output)
-        output = tf.keras.layers.Conv2D(num_classes, 1)(output)
-        output = tf.keras.layers.BatchNormalization()(output)
-        output = tf.keras.layers.Softmax()(output)
+        output = tf.keras.layers.Dense(1280, use_bias=True,activation=h_swish)(output)
+        output = tf.keras.layers.Dense(num_classes, use_bias=True,activation=tf.keras.activations.softmax)(output)
         output = Squeeze()(output)
     return tf.keras.Model(input,output)
