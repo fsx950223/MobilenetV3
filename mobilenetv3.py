@@ -44,12 +44,12 @@ class Bneck(tf.keras.layers.Layer):
             x = self.zero_padding2d(x)
         x = self.depthwise_conv2d(x)
         x = self.depthwise_bn(x)
+        if self.use_se:
+            x = self.se(x)
         x = self.activation(x)
         x = self.project_conv2d(x)
         x = self.project_bn(x)
         if self.in_channels == self.filters and self.strides == 1:
-            if self.use_se:
-                x = self.se(x)
             x = self.add([inputs, x])
         return x
 
@@ -61,11 +61,10 @@ class SeBlock(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         self.average_pool = tf.keras.layers.AveragePooling2D((int(input_shape[1]),int(input_shape[2])))
-        self.conv1 = tf.keras.layers.Conv2D(int(input_shape[-1]) // self.reduction, 1, use_bias=False)
+        self.conv1 = tf.keras.layers.Dense(int(input_shape[-1]) // self.reduction, use_bias=False)
         self.bn1 = tf.keras.layers.BatchNormalization()
-        self.conv2 = tf.keras.layers.Conv2D(int(input_shape[-1]), 1, use_bias=False)
+        self.conv2 = tf.keras.layers.Dense(int(input_shape[-1]), use_bias=False)
         self.bn2 = tf.keras.layers.BatchNormalization()
-        self.h_swish=HSwish()
         self.built = True
 
     def call(self, inputs):
@@ -75,7 +74,7 @@ class SeBlock(tf.keras.layers.Layer):
         x = tf.nn.relu6(x)
         x = self.conv2(x)
         x = self.bn2(x)
-        x = self.h_swish(x)
+        x = tf.keras.activations.hard_sigmoid(x)
         return x
 
 def h_swish(inputs):
@@ -136,18 +135,18 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.
         x = Bneck(96, 288, 5, alpha=alpha, strides=2, padding='valid', use_se=True, activation=h_swish)(x)
         x = Bneck(96, 576, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
         x = Bneck(96, 576, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-
-        x_add = tf.keras.layers.Conv2D(_make_divisible(576 * alpha, 8), 1, use_bias=False)(x)
-        x = tf.keras.layers.BatchNormalization()(x_add)
-        x = tf.keras.layers.Add()([x_add, SeBlock()(x)])
+        x = tf.keras.layers.Conv2D(_make_divisible(576 * alpha, 8), 1, use_bias=False)(x)
+        x = tf.keras.layers.BatchNormalization()(x)
+        x=SeBlock()(x)
         output = HSwish()(x)
     if include_top:
         output = tf.keras.layers.AveragePooling2D(pool_size=x.shape[1:3])(output)
-        output = tf.keras.layers.Flatten()(output)
+        #output = tf.keras.layers.Flatten()(output)
         if alpha > 1.0:
             last_block_filters = _make_divisible(1280 * alpha, 8)
         else:
             last_block_filters = 1280
-        output = tf.keras.layers.Dense(last_block_filters, use_bias=False,activation=h_swish)(output)
-        output = tf.keras.layers.Dense(num_classes, use_bias=True,activation=tf.keras.activations.softmax)(output)
+        output = tf.keras.layers.Conv2D(last_block_filters,1, use_bias=False,activation=h_swish)(output)
+        output=tf.keras.layers.Dropout(0.5)(output)
+        output = tf.keras.layers.Conv2D(num_classes,1, use_bias=True,activation=tf.keras.activations.softmax)(output)
     return tf.keras.Model(input,output)
