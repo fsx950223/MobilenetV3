@@ -11,6 +11,7 @@ class Bneck(tf.keras.layers.Layer):
                  filters,
                  expansion_filters,
                  kernel_size,
+                 alpha=1.0,
                  strides=(1, 1),
                  padding='valid',
                  data_format=None,
@@ -18,7 +19,7 @@ class Bneck(tf.keras.layers.Layer):
                  activation=tf.nn.relu6,
                  **kwargs):
         super(Bneck, self).__init__(**kwargs)
-        self.filters = filters
+        self.filters = _make_divisible(filters * alpha, 8)
         self.expansion_filters = expansion_filters
         self.kernel_size = kernel_size
         self.strides = strides
@@ -90,54 +91,69 @@ class HSwish(tf.keras.layers.Layer):
   def call(self, inputs):
     return h_swish(inputs)
 
-def MobilenetV3(input_shape,num_classes, size="large", include_top=True):
+def _make_divisible(v, divisor, min_value=None):
+    if min_value is None:
+        min_value = divisor
+    new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)
+    # Make sure that round down does not go down by more than 10%.
+    if new_v < 0.9 * v:
+        new_v += divisor
+    return new_v
+
+def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.0):
     input = tf.keras.layers.Input([*input_shape, 3])
+    first_block_filters = _make_divisible(16 * alpha, 8)
     if size not in ['large', 'small']:
         raise ValueError('size should be large or small')
     if size == "large":
-        x = tf.keras.layers.Conv2D(16, 3, strides=2, padding='same', use_bias=False)(input)
+        x = tf.keras.layers.Conv2D(first_block_filters, 3, strides=2, padding='same', use_bias=False)(input)
         x = tf.keras.layers.BatchNormalization()(x)
         x = HSwish()(x)
-        x = Bneck(16, 16, 3, strides=1, padding='same', use_se=False, activation=tf.nn.relu6)(x)
-        x = Bneck(24, 64, 3, strides=2, padding='valid', use_se=False, activation=tf.nn.relu6)(x)
-        x = Bneck(24, 72, 3, strides=1, padding='same', use_se=False, activation=tf.nn.relu6)(x)
-        x = Bneck(40, 72, 5, strides=2, padding='valid', use_se=True, activation=tf.nn.relu6)(x)
-        x = Bneck(40, 120, 5, strides=1, padding='same', use_se=True, activation=tf.nn.relu6)(x)
-        x = Bneck(40, 120, 5, strides=1, padding='same', use_se=True, activation=tf.nn.relu6)(x)
-        x = Bneck(80, 240, 3, strides=2, padding='valid', use_se=False, activation=h_swish)(x)
-        x = Bneck(80, 200, 3, strides=1, padding='same', use_se=False, activation=h_swish)(x)
-        x = Bneck(80, 184, 3, strides=1, padding='same', use_se=False, activation=h_swish)(x)
-        x = Bneck(80, 184, 3, strides=1, padding='same', use_se=False, activation=h_swish)(x)
-        x = Bneck(112, 480, 3, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(112, 672, 3, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(160, 672, 5, strides=2, padding='valid', use_se=True, activation=h_swish)(x)
-        x = Bneck(160, 960, 5, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(160, 960, 5, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = tf.keras.layers.Conv2D(960, 1, use_bias=False)(x)
+        x = Bneck(16, 16, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=tf.nn.relu6)(x)
+        x = Bneck(24, 64, 3, alpha=alpha, strides=2, padding='valid', use_se=False, activation=tf.nn.relu6)(x)
+        x = Bneck(24, 72, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=tf.nn.relu6)(x)
+        x = Bneck(40, 72, 5, alpha=alpha, strides=2, padding='valid', use_se=True, activation=tf.nn.relu6)(x)
+        x = Bneck(40, 120, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=tf.nn.relu6)(x)
+        x = Bneck(40, 120, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=tf.nn.relu6)(x)
+        x = Bneck(80, 240, 3, alpha=alpha, strides=2, padding='valid', use_se=False, activation=h_swish)(x)
+        x = Bneck(80, 200, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=h_swish)(x)
+        x = Bneck(80, 184, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=h_swish)(x)
+        x = Bneck(80, 184, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=h_swish)(x)
+        x = Bneck(112, 480, 3, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+        x = Bneck(112, 672, 3, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+        x = Bneck(160, 672, 5, alpha=alpha, strides=2, padding='valid', use_se=True, activation=h_swish)(x)
+        x = Bneck(160, 960, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+        x = Bneck(160, 960, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+        x = tf.keras.layers.Conv2D(_make_divisible(960 * alpha, 8), 1, use_bias=False)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         output = HSwish()(x)
     else:
-        x = tf.keras.layers.Conv2D(16, 3, strides=2, padding='same', use_bias=False)(input)
+        x = tf.keras.layers.Conv2D(first_block_filters, 3, strides=2, padding='same', use_bias=False)(input)
         x = tf.keras.layers.BatchNormalization()(x)
         x = HSwish()(x)
-        x = Bneck(16, 16, 3, strides=2, padding='valid', use_se=True, activation=tf.nn.relu6)(x)
-        x = Bneck(24, 72, 3, strides=2, padding='valid', use_se=False, activation=tf.nn.relu6)(x)
-        x = Bneck(24, 88, 3, strides=1, padding='same', use_se=False, activation=tf.nn.relu6)(x)
-        x = Bneck(40, 96, 5, strides=2, padding='valid', use_se=True, activation=h_swish)(x)
-        x = Bneck(40, 240, 5, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(40, 240, 5, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(48, 120, 5, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(48, 144, 5, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(96, 288, 5, strides=2, padding='valid', use_se=True, activation=h_swish)(x)
-        x = Bneck(96, 576, 5, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(96, 576, 5, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = tf.keras.layers.Conv2D(576, 1, use_bias=False)(x)
+        x = Bneck(16, 16, 3, alpha=alpha, strides=2, padding='valid', use_se=True, activation=tf.nn.relu6)(x)
+        x = Bneck(24, 72, 3, alpha=alpha, strides=2, padding='valid', use_se=False, activation=tf.nn.relu6)(x)
+        x = Bneck(24, 88, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=tf.nn.relu6)(x)
+        x = Bneck(40, 96, 5, alpha=alpha, strides=2, padding='valid', use_se=True, activation=h_swish)(x)
+        x = Bneck(40, 240, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+        x = Bneck(40, 240, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+        x = Bneck(48, 120, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+        x = Bneck(48, 144, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+        x = Bneck(96, 288, 5, alpha=alpha, strides=2, padding='valid', use_se=True, activation=h_swish)(x)
+        x = Bneck(96, 576, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+        x = Bneck(96, 576, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+
+        x = tf.keras.layers.Conv2D(_make_divisible(576 * alpha, 8), 1, use_bias=False)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x = HSwish()(x)
         output=tf.keras.layers.Add()([x, SeBlock()(x)])
     if include_top:
         output = tf.keras.layers.AveragePooling2D(pool_size=x.shape[1:3])(output)
         output = Squeeze()(output)
-        output = tf.keras.layers.Dense(1280, use_bias=False,activation=h_swish)(output)
+        if alpha > 1.0:
+            last_block_filters = _make_divisible(1280 * alpha, 8)
+        else:
+            last_block_filters = 1280
+        output = tf.keras.layers.Dense(last_block_filters, use_bias=False,activation=h_swish)(output)
         output = tf.keras.layers.Dense(num_classes, use_bias=True,activation=tf.keras.activations.softmax)(output)
     return tf.keras.Model(input,output)
