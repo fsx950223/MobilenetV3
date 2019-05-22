@@ -1,11 +1,5 @@
 import tensorflow as tf
 
-class Squeeze(tf.keras.layers.Layer):
-    def call(self, input):
-        x = tf.squeeze(input, [1])
-        x = tf.squeeze(x, [1])
-        return x
-
 class Bneck(tf.keras.layers.Layer):
     def __init__(self,
                  filters,
@@ -149,7 +143,7 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.
         output=tf.keras.layers.Add()([x, SeBlock()(x)])
     if include_top:
         output = tf.keras.layers.AveragePooling2D(pool_size=x.shape[1:3])(output)
-        output = Squeeze()(output)
+        output = tf.keras.layers.Flatten()(output)
         if alpha > 1.0:
             last_block_filters = _make_divisible(1280 * alpha, 8)
         else:
