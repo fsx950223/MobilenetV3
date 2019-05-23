@@ -69,7 +69,7 @@ class SeBlock(tf.keras.layers.Layer):
         x = self.average_pool(inputs)
         x = self.dense1(x)
         x = self.dense2(x)
-        return x
+        return inputs *x
 
 def h_swish(inputs):
     return inputs * tf.nn.relu6(inputs + 3) / 6
