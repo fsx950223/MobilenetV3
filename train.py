@@ -9,7 +9,7 @@ USE_TPU=False
 NUM_CLASSES=10
 EPOCH=20
 DATASET='cifar10'
-INPUT_SHAPE=(224,224)
+INPUT_SHAPE=(32,32)
 
 mobilenet_v3 = MobilenetV3(INPUT_SHAPE,NUM_CLASSES,'small',alpha=1.0)
 cos_lr = tf.keras.callbacks.LearningRateScheduler(
@@ -26,25 +26,7 @@ train_dataset, test_dataset = dataset
 train_num = info.splits['train'].num_examples
 test_num = info.splits['test'].num_examples
 
-# def zca_whitening(inputs,epsilon=1e-8):
-#     sigma = np.dot(inputs, inputs.T) / inputs.shape[1]  # inputs是经过归一化处理的，所以这边就相当于计算协方差矩阵
-#     U, S, V = np.linalg.svd(sigma)  # 奇异分解
-#     epsilon = 0.1  # 白化的时候，防止除数为0
-#     ZCAMatrix = np.dot(np.dot(U, np.diag(1.0 / np.sqrt(np.diag(S) + epsilon))), U.T)  # 计算zca白化矩阵
-#     return np.dot(ZCAMatrix, inputs)
-
-# Image whiten
-# def image_whiten(image):
-#     return (image-tf.math.reduce_mean(image))/ tf.math.reduce_std(image)
-
 def preprocess_image(image):
-    # image=tf.image.convert_image_dtype(image,tf.float32)
-    # mean=tf.reduce_mean(image)
-    # std=tf.reduce_max([tf.math.reduce_std(image),1.0 / tf.sqrt(tf.reduce_prod(tf.cast(image.shape,tf.float32)))])
-    # image=(image-mean)/std
-    #image=tf.py_function(lambda old_image:(old_image - np.mean(old_image)) / np.std(old_image),[image],[tf.uint8])
-    #image=image_whiten(image)
-    #image=tf.image.random_crop(image,[*INPUT_SHAPE*3/4,3])
     image=tf.image.random_brightness(image,0.1)
     image=tf.image.random_hue(image,0.1)
     image=tf.image.random_flip_left_right(image)
