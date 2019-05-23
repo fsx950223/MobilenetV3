@@ -17,14 +17,14 @@ class Bneck(tf.keras.layers.Layer):
         self.strides = strides
         self.use_se = use_se
         self.activation = activation
-        self.expand_conv2d = tf.keras.layers.Conv2D(self.expansion_filters, 1, padding='same', use_bias=False)
+        self.expand_conv2d = tf.keras.layers.Conv2D(self.expansion_filters, 1, padding='same', use_bias=False,kernel_regularizer=tf.keras.regularizers.l2(1e-5))
         self.expand_bn = tf.keras.layers.BatchNormalization()
         self.zero_padding2d = tf.keras.layers.ZeroPadding2D(((self.kernel_size - 1) // 2, (self.kernel_size - 1) // 2))
         self.depthwise_conv2d = tf.keras.layers.DepthwiseConv2D(self.kernel_size, strides=self.strides, use_bias=False,
-                                                                padding='same' if self.strides == 1 else 'valid')
+                                                                padding='same' if self.strides == 1 else 'valid',depthwise_regularizer=tf.keras.regularizers.l2(1e-5))
         self.depthwise_bn = tf.keras.layers.BatchNormalization()
         self.se = SeBlock()
-        self.project_conv2d = tf.keras.layers.Conv2D(self.filters, kernel_size=1, padding='same', use_bias=False)
+        self.project_conv2d = tf.keras.layers.Conv2D(self.filters, kernel_size=1, padding='same', use_bias=False,kernel_regularizer=tf.keras.regularizers.l2(1e-5))
         self.project_bn = tf.keras.layers.BatchNormalization()
         self.add = tf.keras.layers.Add()
 
@@ -89,7 +89,7 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.
     if size not in ['large', 'small']:
         raise ValueError('size should be large or small')
     if size == "large":
-        x = tf.keras.layers.Conv2D(first_block_filters, 3, strides=2, padding='same', use_bias=False)(input)
+        x = tf.keras.layers.Conv2D(first_block_filters, 3, strides=2, padding='same', use_bias=False,kernel_regularizer=tf.keras.regularizers.l2(1e-5))(input)
         x = tf.keras.layers.BatchNormalization()(x)
         x = HSwish()(x)
         x = Bneck(16, 16, 3, alpha=alpha, strides=1, use_se=False, activation=tf.nn.relu6)(x)
@@ -107,11 +107,11 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.
         x = Bneck(160, 672, 5, alpha=alpha, strides=2, use_se=True, activation=h_swish)(x)
         x = Bneck(160, 960, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
         x = Bneck(160, 960, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
-        x = tf.keras.layers.Conv2D(_make_divisible(960 * alpha, 8), 1, use_bias=False)(x)
+        x = tf.keras.layers.Conv2D(_make_divisible(960 * alpha, 8), 1, use_bias=False,kernel_regularizer=tf.keras.regularizers.l2(1e-5))(x)
         x = tf.keras.layers.BatchNormalization()(x)
         output = HSwish()(x)
     else:
-        x = tf.keras.layers.Conv2D(first_block_filters, 3, strides=2, padding='same', use_bias=False)(input)
+        x = tf.keras.layers.Conv2D(first_block_filters, 3, strides=2, padding='same', use_bias=False,kernel_regularizer=tf.keras.regularizers.l2(1e-5))(input)
         x = tf.keras.layers.BatchNormalization()(x)
         x = HSwish()(x)
         x = Bneck(16, 16, 3, alpha=alpha, strides=2, use_se=True, activation=tf.nn.relu6)(x)
@@ -125,7 +125,7 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.
         x = Bneck(96, 288, 5, alpha=alpha, strides=2, use_se=True, activation=h_swish)(x)
         x = Bneck(96, 576, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
         x = Bneck(96, 576, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
-        x = tf.keras.layers.Conv2D(_make_divisible(576 * alpha, 8), 1, use_bias=False)(x)
+        x = tf.keras.layers.Conv2D(_make_divisible(576 * alpha, 8), 1, use_bias=False,kernel_regularizer=tf.keras.regularizers.l2(1e-5))(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x=SeBlock()(x)
         output = HSwish()(x)
@@ -135,8 +135,8 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.
             last_block_filters = _make_divisible(1280 * alpha, 8)
         else:
             last_block_filters = 1280
-        output = tf.keras.layers.Conv2D(last_block_filters,1, use_bias=False,activation=h_swish)(output)
-        output = tf.keras.layers.Dropout(0.5)(output)
-        output = tf.keras.layers.Conv2D(num_classes,1, use_bias=True,activation=tf.keras.activations.softmax)(output)
+        output = tf.keras.layers.Conv2D(last_block_filters,1, use_bias=False,activation=h_swish,kernel_regularizer=tf.keras.regularizers.l2(1e-5))(output)
+        output = tf.keras.layers.Dropout(0.8)(output)
+        output = tf.keras.layers.Conv2D(num_classes,1, use_bias=True,activation=tf.keras.activations.softmax,kernel_regularizer=tf.keras.regularizers.l2(1e-5))(output)
         output = tf.keras.layers.Flatten()(output)
     return tf.keras.Model(input,output)
