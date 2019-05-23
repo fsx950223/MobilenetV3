@@ -7,8 +7,6 @@ class Bneck(tf.keras.layers.Layer):
                  kernel_size,
                  alpha=1.0,
                  strides=(1, 1),
-                 padding='valid',
-                 data_format=None,
                  use_se=False,
                  activation=tf.nn.relu6,
                  **kwargs):
@@ -17,8 +15,6 @@ class Bneck(tf.keras.layers.Layer):
         self.expansion_filters = expansion_filters
         self.kernel_size = kernel_size
         self.strides = strides
-        self.padding = padding
-        self.data_format = data_format
         self.use_se = use_se
         self.activation = activation
         self.expand_conv2d = tf.keras.layers.Conv2D(self.expansion_filters, 1, padding='same', use_bias=False)
@@ -96,21 +92,21 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.
         x = tf.keras.layers.Conv2D(first_block_filters, 3, strides=2, padding='same', use_bias=False)(input)
         x = tf.keras.layers.BatchNormalization()(x)
         x = HSwish()(x)
-        x = Bneck(16, 16, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=tf.nn.relu6)(x)
-        x = Bneck(24, 64, 3, alpha=alpha, strides=2, padding='valid', use_se=False, activation=tf.nn.relu6)(x)
-        x = Bneck(24, 72, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=tf.nn.relu6)(x)
-        x = Bneck(40, 72, 5, alpha=alpha, strides=2, padding='valid', use_se=True, activation=tf.nn.relu6)(x)
-        x = Bneck(40, 120, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=tf.nn.relu6)(x)
-        x = Bneck(40, 120, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=tf.nn.relu6)(x)
-        x = Bneck(80, 240, 3, alpha=alpha, strides=2, padding='valid', use_se=False, activation=h_swish)(x)
-        x = Bneck(80, 200, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=h_swish)(x)
-        x = Bneck(80, 184, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=h_swish)(x)
-        x = Bneck(80, 184, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=h_swish)(x)
-        x = Bneck(112, 480, 3, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(112, 672, 3, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(160, 672, 5, alpha=alpha, strides=2, padding='valid', use_se=True, activation=h_swish)(x)
-        x = Bneck(160, 960, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(160, 960, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+        x = Bneck(16, 16, 3, alpha=alpha, strides=1, use_se=False, activation=tf.nn.relu6)(x)
+        x = Bneck(24, 64, 3, alpha=alpha, strides=2, use_se=False, activation=tf.nn.relu6)(x)
+        x = Bneck(24, 72, 3, alpha=alpha, strides=1, use_se=False, activation=tf.nn.relu6)(x)
+        x = Bneck(40, 72, 5, alpha=alpha, strides=2, use_se=True, activation=tf.nn.relu6)(x)
+        x = Bneck(40, 120, 5, alpha=alpha, strides=1, use_se=True, activation=tf.nn.relu6)(x)
+        x = Bneck(40, 120, 5, alpha=alpha, strides=1, use_se=True, activation=tf.nn.relu6)(x)
+        x = Bneck(80, 240, 3, alpha=alpha, strides=2, use_se=False, activation=h_swish)(x)
+        x = Bneck(80, 200, 3, alpha=alpha, strides=1, use_se=False, activation=h_swish)(x)
+        x = Bneck(80, 184, 3, alpha=alpha, strides=1, use_se=False, activation=h_swish)(x)
+        x = Bneck(80, 184, 3, alpha=alpha, strides=1, use_se=False, activation=h_swish)(x)
+        x = Bneck(112, 480, 3, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
+        x = Bneck(112, 672, 3, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
+        x = Bneck(160, 672, 5, alpha=alpha, strides=2, use_se=True, activation=h_swish)(x)
+        x = Bneck(160, 960, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
+        x = Bneck(160, 960, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
         x = tf.keras.layers.Conv2D(_make_divisible(960 * alpha, 8), 1, use_bias=False)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         output = HSwish()(x)
@@ -118,17 +114,17 @@ def MobilenetV3(input_shape,num_classes, size="large", include_top=True,alpha=1.
         x = tf.keras.layers.Conv2D(first_block_filters, 3, strides=2, padding='same', use_bias=False)(input)
         x = tf.keras.layers.BatchNormalization()(x)
         x = HSwish()(x)
-        x = Bneck(16, 16, 3, alpha=alpha, strides=2, padding='valid', use_se=True, activation=tf.nn.relu6)(x)
-        x = Bneck(24, 72, 3, alpha=alpha, strides=2, padding='valid', use_se=False, activation=tf.nn.relu6)(x)
-        x = Bneck(24, 88, 3, alpha=alpha, strides=1, padding='same', use_se=False, activation=tf.nn.relu6)(x)
-        x = Bneck(40, 96, 5, alpha=alpha, strides=2, padding='valid', use_se=True, activation=h_swish)(x)
-        x = Bneck(40, 240, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(40, 240, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(48, 120, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(48, 144, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(96, 288, 5, alpha=alpha, strides=2, padding='valid', use_se=True, activation=h_swish)(x)
-        x = Bneck(96, 576, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
-        x = Bneck(96, 576, 5, alpha=alpha, strides=1, padding='same', use_se=True, activation=h_swish)(x)
+        x = Bneck(16, 16, 3, alpha=alpha, strides=2, use_se=True, activation=tf.nn.relu6)(x)
+        x = Bneck(24, 72, 3, alpha=alpha, strides=2, use_se=False, activation=tf.nn.relu6)(x)
+        x = Bneck(24, 88, 3, alpha=alpha, strides=1, use_se=False, activation=tf.nn.relu6)(x)
+        x = Bneck(40, 96, 5, alpha=alpha, strides=2, use_se=True, activation=h_swish)(x)
+        x = Bneck(40, 240, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
+        x = Bneck(40, 240, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
+        x = Bneck(48, 120, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
+        x = Bneck(48, 144, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
+        x = Bneck(96, 288, 5, alpha=alpha, strides=2, use_se=True, activation=h_swish)(x)
+        x = Bneck(96, 576, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
+        x = Bneck(96, 576, 5, alpha=alpha, strides=1, use_se=True, activation=h_swish)(x)
         x = tf.keras.layers.Conv2D(_make_divisible(576 * alpha, 8), 1, use_bias=False)(x)
         x = tf.keras.layers.BatchNormalization()(x)
         x=SeBlock()(x)
